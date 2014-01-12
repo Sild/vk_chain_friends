@@ -2,7 +2,7 @@
 #include <curl/curl.h>
 #include <vector>
 #include <sstream>
-
+#include <boost/thread.hpp>
 class Request {
 public:
     Request() : curl(curl_easy_init()) {}
@@ -56,9 +56,20 @@ std::vector<int> Finder::friends(int user_id) {
 
 Request Finder::req;
 
+void long_function() {
+	printf("Thread: Hello!\n");
+    boost::posix_time::seconds SleepTime(2);
+    boost::this_thread::sleep(SleepTime);	//	Ждем 2 секунды (подробее см. ниже)
+    printf("Thread: Bye Bye!");
+}
+
 int main()
 {
-    Finder::friends(1);
+    Finder::friends(659061);
+    boost::thread Thread(long_function);
+    Thread.join();
     return 0;
 }
+
+
 
