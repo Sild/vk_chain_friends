@@ -2,9 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QWidget>
-#include <QtWebKit>
 #include <QUrl>
+#include <QUrlQuery>
 
 namespace Ui {
 class MainWindow;
@@ -20,6 +19,15 @@ public:
 
 private:
     Ui::MainWindow *ui;
+
+public slots:
+    void checkUrl(QUrl url);
+    void getFriends(QString token);
+
+signals:
+    void auth_success(QString token);
 };
+
+
 
 #endif // MAINWINDOW_H
