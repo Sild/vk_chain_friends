@@ -2,6 +2,7 @@
 #include <curl/curl.h>
 #include <vector>
 #include <sstream>
+#include <boost/thread.hpp>
 #include "json.h"
 
 class Request {
@@ -74,6 +75,13 @@ std::vector<int> Finder::friends(int user_id) {
 
 Request Finder::req;
 
+void long_function() {
+	printf("Thread: Hello!\n");
+    boost::posix_time::seconds SleepTime(2);
+    boost::this_thread::sleep(SleepTime);	//	Ждем 2 секунды (подробее см. ниже)
+    printf("Thread: Bye Bye!");
+}
+
 int main()
 {
     std::vector<int> fr = Finder::friends(1);
@@ -84,6 +92,11 @@ int main()
     }
     std::cout << std::endl << fr.size() << std::endl;
 
+    Finder::friends(659061);
+    boost::thread Thread(long_function);
+    Thread.join();
     return 0;
 }
+
+
 

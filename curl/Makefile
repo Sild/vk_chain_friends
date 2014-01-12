@@ -1,5 +1,6 @@
 all: main.o json.o
-	clang++ main.o json.o -o app -lcurl
+	clang++ main.o json.o -o app -lcurl -lboost_thread
+
 
 main.o: main.cpp
 	clang++ -c main.cpp -o main.o
