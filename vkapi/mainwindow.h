@@ -4,6 +4,15 @@
 #include <QMainWindow>
 #include <QUrl>
 #include <QUrlQuery>
+#include <QByteArray>
+#include <QNetworkAccessManager>
+#include <QNetworkReply>
+#include <QNetworkRequest>
+
+#include <QTimer>
+#include <QEventLoop>
+
+#include <QDebug>
 
 namespace Ui {
 class MainWindow;
@@ -19,6 +28,8 @@ public:
 
 private:
     Ui::MainWindow *ui;
+
+    QByteArray GET(QUrl url);
 
 public slots:
     void checkUrl(QUrl url);

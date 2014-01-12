@@ -32,4 +32,24 @@ void MainWindow::checkUrl(QUrl url) {
 void MainWindow::getFriends(QString token)
 {
     ui->label->setText(token);
+    QUrl url("https://api.vk.com/method/friends.get?access_token="+token);
+    QByteArray answer = GET(url);
+    qDebug() << answer;
+}
+
+QByteArray MainWindow::GET(QUrl url)
+{
+    QNetworkAccessManager* manager = new QNetworkAccessManager(this);
+    QNetworkRequest request(url);
+    QNetworkReply* reply = manager->get(request);
+
+    QEventLoop wait;
+    connect( manager, SIGNAL(finished(QNetworkReply*)), &wait, SLOT(quit()) );
+    QTimer::singleShot(10000, &wait, SLOT(quit()));
+    wait.exec();
+
+    QByteArray answer = reply->readAll();
+    reply->deleteLater();
+    return answer;
+
 }
