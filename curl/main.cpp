@@ -2,6 +2,7 @@
 #include <curl/curl.h>
 #include <vector>
 #include <sstream>
+#include "json.h"
 
 class Request {
 public:
