@@ -50,8 +50,25 @@ std::vector<int> Finder::friends(int user_id) {
     std::ostringstream buf;
     buf << "https://api.vk.com/method/friends.get?user_id=" << user_id;
     std::string result( req.run(buf.str()) );
-    std::cout << result << std::endl;
+
+
+    json::Object obj(json::Deserialize(result));
+    json::Value response(obj["response"]);
+
     std::vector<int> r;
+    if (response.GetType() == json::ArrayVal) {
+        json::Array ids(response);
+        for (
+             std::vector< json::Value >::const_iterator iter = ids.begin(), end = ids.end();
+             iter != end; ++iter
+             ) {
+            if (iter->IsNumeric()) {
+                r.push_back(*iter);
+            }
+        }
+    }
+
+    //std::cout << result << std::endl;
     return r;
 }
 
@@ -59,7 +76,14 @@ Request Finder::req;
 
 int main()
 {
-    Finder::friends(1);
+    std::vector<int> fr = Finder::friends(1);
+    int size = fr.size();
+    for (int i = 0; i < size; ++i) {
+        std::cout << fr[i] << "\t";
+        if ( (i % 7 == 0) && (i != 0) ) std::cout << std::endl;
+    }
+    std::cout << std::endl << fr.size() << std::endl;
+
     return 0;
 }
 
