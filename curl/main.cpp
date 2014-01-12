@@ -2,7 +2,12 @@
 #include <curl/curl.h>
 #include <vector>
 #include <sstream>
+<<<<<<< HEAD
 #include <boost/thread.hpp>
+=======
+#include "json.h"
+
+>>>>>>> a10623b2e8cecacf212b5977c4f2a7261a10edda
 class Request {
 public:
     Request() : curl(curl_easy_init()) {}
