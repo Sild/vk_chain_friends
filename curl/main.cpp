@@ -73,8 +73,6 @@ std::vector<int> Finder::friends(int user_id) {
 	        }
 	    }
     }
-
-    //std::cout << result << std::endl;
     return r;
 }
 
@@ -98,19 +96,6 @@ public:
 	}
 
 	Wagon* get_next() {
-		/*if(is_init) {
-			is_init = false;
-			itrtr = consist.begin();
-		} else {
-			itrtr++;			
-		}
-		if(itrtr == consist.end()) {
-			return 0;
-		} else {
-			Wagon* tmp = (itrtr->second);
-			return tmp;
-		}*/
-
 		if (iterator < contaiter.size()) {
 			Wagon* tmp = contaiter[iterator];
 			iterator++;
@@ -160,8 +145,15 @@ bool target_founded = false;
 Train* train = new Train();
 
 void init() {
-	root_id = 681449;
-	target_id = 1;//681449;
+	std::cout << "root_id: ";
+	std::cin >> root_id;
+	std::cout << "target_id: ";
+	std::cin >> target_id;
+	if(root_id == 0 && target_id == 0) {
+		root_id = 659061;
+		target_id = 681449;
+	}
+	
 	std::vector<int> ids;
 	ids.push_back(root_id);
 	train->hitch(0, ids);
@@ -170,19 +162,13 @@ void init() {
 }
 
 int conductor(std::vector<int> ids) {
-		//	std::cout << "cinductor" << std::endl;
-
 	for(std::vector<int>::iterator itr = ids.begin(), end = ids.end(); itr != end; ++itr) {
-		// std::cout << "chenit'" << *itr << std::endl;
 		std::vector<int> fr = Finder::friends(*itr);
 		std::cout << fr.size() << std::endl;
-		/*for(std::vector<int>::iterator asd = fr.begin(); asd != fr.end(); asd++) {
-			std::cout << *asd << ", ";
-		}*/
+
 		std::cout << std::endl;
 		if(std::find(fr.begin(), fr.end(), target_id)!=fr.end()) {
 			target_founded = true;
-			// std::cout << "asdasdawweeeee";
 			current_thread_count--;
 			return *itr;
 		} else {
@@ -192,7 +178,6 @@ int conductor(std::vector<int> ids) {
 		}	
 	}
 	current_thread_count--;
-
 	return 0;
 }
 
