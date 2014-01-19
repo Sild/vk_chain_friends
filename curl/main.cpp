@@ -5,6 +5,7 @@
 #include <boost/thread.hpp>
 #include "json.h"
 #include <algorithm>
+#include <ctime>
 
 class Request {
 public:
@@ -78,6 +79,17 @@ std::vector<int> Finder::friends(int user_id) {
 
 Request Finder::req;
 
+const int MAX_THREAD_COUNT = 1;
+const int MAX_WAGON_PER_THREAD = 10;
+int current_thread_count = 0;
+int root_id = 0;
+int target_id = 0;
+bool view_showed = false;
+bool target_founded = false;
+
+
+
+
 
 
 void threading();
@@ -91,23 +103,48 @@ struct Wagon {
 
 class Train {
 public:
+	void show() {
+		std::cout << "[" << content.size() << "]";
+		for(int i = 0; i < content.size(); i++)	{
+			std::cout << content[i] << "; ";
+		}
+		std::cout << "show finish" << std::endl;
+	} 
 	Train() {
 		iterator = 0;
 	}
 
-	Wagon* get_next() {
-		if (iterator < contaiter.size()) {
-			Wagon* tmp = contaiter[iterator];
-			iterator++;
-			return tmp;
+	bool is_finish() {
+		if(iterator < content.size()) {
+			return false; 
+		} else {
+			return true;
 		}
-		return 0;
+	}
+
+	std::vector<int> get_next() {
+		std::vector<int> ids;
+		if (iterator < content.size()) {
+			if((content.size() - iterator)  < MAX_WAGON_PER_THREAD) {
+				for(int i = iterator; i < content.size(); i++) {
+					ids.push_back(content[i]);
+				}
+				iterator = content.size();
+			} else {
+				for(int i = iterator; i < iterator + MAX_WAGON_PER_THREAD; i++) {
+					ids.push_back(content[i]);
+				}
+				iterator += MAX_WAGON_PER_THREAD;
+				
+			}
+			return ids;
+		}
+		return ids;
 	}
 
 	Wagon* get(int id) {
-		//Wagon* wagon = 0;
-		std::map<int, Wagon* >::iterator itr = consist.find(id);
-		if(itr != consist.end()) {
+		std::map<int, Wagon* >::iterator itr = wagons.find(id);
+		if(itr != wagons.end()) {
 			return itr->second;
 		} else {
 			return 0;
@@ -115,185 +152,105 @@ public:
 	}
 
 	void hitch(Wagon* parent, std::vector<int> ids) {
+		int par_id = (parent)?parent->id:root_id;
+		std::cout << "hitch " << ids.size() << " elements from " << par_id << std::endl << "new content size: " << content.size() << std::endl;
 		for(int i = 0; i < ids.size(); i++) {
-			if(consist.find(ids[i]) == consist.end()) {
+			if(wagons.find(ids[i]) == wagons.end()) {
 				Wagon* wagon = new Wagon(ids[i], parent, (parent)?parent->deep + 1:0);
-				consist[ids[i]] = wagon;
-				std::cout << "hitch: " << ids[i] << std::endl;
-				contaiter.push_back(wagon);
+				wagons[ids[i]] = wagon;
+				content.push_back(ids[i]);
 			}
 		}
 	}
 
 private:
-	bool is_init;
-	std::map<int, Wagon*> consist;
-	std::map<int, Wagon*>::iterator itrtr;
-
-	std::vector< Wagon* > contaiter;
+	std::map<int, Wagon*> wagons;
+	std::vector<int> content;
 	int iterator;
 };
 
-const int MAX_THREAD_COUNT = 100;
-const int MAX_WAGON_PER_THREAD = 100;
-int current_thread_count = 0;
-int root_id = 0;
-int target_id = 0;
-bool view_showed = false;
-bool target_founded = false;
 
 Train* train = new Train();
 
+
 void init() {
+	std::cout << "you can set 0 for root&target to get test-chain(from 659061 to 681449)" << std::endl;
 	std::cout << "root_id: ";
 	std::cin >> root_id;
 	std::cout << "target_id: ";
 	std::cin >> target_id;
 	if(root_id == 0 && target_id == 0) {
 		root_id = 659061;
-		target_id = 681449;
+		target_id = /*1117;//*/681449;
 	}
-	
 	std::vector<int> ids;
 	ids.push_back(root_id);
 	train->hitch(0, ids);
-
-
 }
 
 int conductor(std::vector<int> ids) {
-	for(std::vector<int>::iterator itr = ids.begin(), end = ids.end(); itr != end; ++itr) {
-		std::vector<int> fr = Finder::friends(*itr);
-		std::cout << fr.size() << std::endl;
-
-		std::cout << std::endl;
-		if(std::find(fr.begin(), fr.end(), target_id)!=fr.end()) {
-			target_founded = true;
-			current_thread_count--;
-			return *itr;
-		} else {
-			train->hitch(train->get(*itr), fr);
-
-			threading();
-		}	
+	if(ids.size() > 0) {
+		for(int i = 0; i < ids.size(); i++) {
+			std::vector<int> fr = Finder::friends(ids[i]);
+			if(std::find(fr.begin(), fr.end(), target_id)!=fr.end()) {
+				target_founded = true;
+				train->hitch(train->get(ids[i]), fr);
+				current_thread_count--;
+				return ids[i];
+			} else {
+				train->hitch(train->get(ids[i]), fr);
+			}	
+		}
+		current_thread_count--;
+		return 0;
+	} else {
+		current_thread_count--;
+		return 0;
 	}
-	current_thread_count--;
-	return 0;
+	
 }
+boost::thread_group threads;
+
+void show_result(int finder);
 
 void threading() {
-			std::cout << "testthreadbegin" << std::endl;
-
 	if(!target_founded) {
-
-		while(current_thread_count < MAX_THREAD_COUNT) {
-			if(!target_founded) {
-				std::vector<int> queue;
-				std::vector< boost::thread* > threads;
-				int counter = 0;
-				for ( Wagon* wagon = train->get_next(); wagon; wagon = train->get_next(), counter++ ) {
-					if ( counter < MAX_WAGON_PER_THREAD ) {
-						queue.push_back(wagon->id);
-					}
-					else {
-						threads.push_back(new boost::thread(conductor, queue));
-						queue.clear();
-						counter = 0;
-					}
-				}
-				if (queue.size() > 0) {
-					threads.push_back( new boost::thread(conductor, queue));
-					queue.clear();
-				}
-
-				int thread_size = threads.size();
-				for (int i = 0; i < thread_size; ++i, ++current_thread_count )
-					threads[i]->detach();
-
-				for (int i = 0; i < thread_size; ++i, ++current_thread_count )
-					delete threads[i];
-				/*for(int i = 0; i < MAX_WAGON_PER_THREAD; i++) {
-					Wagon* wagon = train->get_next();
-					if(wagon) {
-						queue.push_back(wagon->id);
-
-					} else {
-						break;
-					}
-				}
-				boost::thread Thread(conductor, queue);
-	    		Thread.join();
-	    		current_thread_count++;*/
-			} else {
-				break;
-			}
-			
+		while((current_thread_count < MAX_THREAD_COUNT) & !train->is_finish()){ 
+			threads.create_thread(boost::bind(conductor, train->get_next()));
+			current_thread_count++;
 		}
+		threads.join_all();
+		threading();
 	} else {
-		if(!view_showed) {
-			std::cout << "zaebca" << std::endl;
-			view_showed = true;
-		}
+		show_result(target_id);
 	}
 }
 
-void stop_all(int finder) {
-	std::cout << "IHHAA: " << finder << std::endl;
-	std::cout << target_id << " << ";
-	Wagon* parent = 0;
-	int prev = finder;
-	for (Wagon* wagon = train->get(finder); wagon; wagon = wagon->parent) {
-		std::cout << wagon->id << " << ";
+void show_result(int target_id) {
+	Wagon* target_wagon = train->get(target_id);
+	while(target_wagon->id != root_id) {
+		std::cout << target_wagon->id << " << ";
+		target_wagon = target_wagon->parent;
 	}
+	std::cout << target_wagon->id;
 	std::cout << std::endl;
-	while(true);
 }
-
-void validator(const std::vector<int>& ids) {
-	size_t size = ids.size();
-	for (size_t i = 0; i < size; ++i) {
-		std::vector<int> fr = Finder::friends(ids[i]);
-		if(std::find(fr.begin(), fr.end(), target_id)!=fr.end()) {
-			stop_all(ids[i]);
-		} else {
-			train->hitch(train->get(ids[i]), fr);
-		}	
-	}
-}
-
-void non_theading() {
-	Wagon* wagon = 0;
-	int counter = 0;
-	std::vector<int> queue;
-	while( wagon = train->get_next()) {
-		if (counter < MAX_WAGON_PER_THREAD) {
-			queue.push_back( wagon->id );
-		}
-		else {
-			validator(queue);
-			queue.clear();
-			counter = 0;
-		}
-		++counter;
-	}
-	if (queue.size() > 0) {
-		validator(queue);
-	}
-}
-
-
-
 
 
 
 
 int main()
 {
+	clock_t start = clock();
 	init();
-	while(true) non_theading();
-    //threading();
+   	threading();
+
+    clock_t finish = clock();
+    
+    // std::cout << (double)(finish - start)<< std::endl;
     return 0;
 }
+
 
 
 
