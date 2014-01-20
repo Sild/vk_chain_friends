@@ -6,6 +6,7 @@
 #include "json.h"
 #include <algorithm>
 #include <ctime>
+// #include <mutex>
 
 class Request {
 public:
@@ -19,6 +20,10 @@ private:
     CURLcode res;
 
 };
+
+boost::mutex mtx_wagon;
+boost::mutex mtx_content;
+
 
 size_t write_data(char *ptr, size_t size, size_t nmemb, void *userdata) {
     std::ostringstream *stream = (std::ostringstream*)userdata;
@@ -80,7 +85,7 @@ std::vector<int> Finder::friends(int user_id) {
 Request Finder::req;
 
 const int MAX_THREAD_COUNT = 1;
-const int MAX_WAGON_PER_THREAD = 10;
+const int MAX_WAGON_PER_THREAD = 1000;
 int current_thread_count = 0;
 int root_id = 0;
 int target_id = 0;
@@ -154,6 +159,8 @@ public:
 	void hitch(Wagon* parent, std::vector<int> ids) {
 		int par_id = (parent)?parent->id:root_id;
 		std::cout << "hitch " << ids.size() << " elements from " << par_id << std::endl << "new content size: " << content.size() << std::endl;
+		// mtx_wagon.lock();
+		// mtx_content.lock();
 		for(int i = 0; i < ids.size(); i++) {
 			if(wagons.find(ids[i]) == wagons.end()) {
 				Wagon* wagon = new Wagon(ids[i], parent, (parent)?parent->deep + 1:0);
@@ -161,6 +168,8 @@ public:
 				content.push_back(ids[i]);
 			}
 		}
+		// mtx_wagon.unlock();
+		// mtx_content.unlock();
 	}
 
 private:
@@ -216,6 +225,7 @@ void show_result(int finder);
 void threading() {
 	if(!target_founded) {
 		while((current_thread_count < MAX_THREAD_COUNT) & !train->is_finish()){ 
+
 			threads.create_thread(boost::bind(conductor, train->get_next()));
 			current_thread_count++;
 		}
