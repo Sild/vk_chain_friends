@@ -51,14 +51,14 @@ std::string Request::run( const std::string &url ) {
 class Finder {
 public:
     static std::vector<int> friends(int user_id);
-private:
-    static Request req;
 };
+
 
 std::vector<int> Finder::friends(int user_id) {
     std::ostringstream buf;
     buf << "https://api.vk.com/method/friends.get?user_id=" << user_id;
-    std::string result( req.run(buf.str()) );
+    Request request;
+    std::string result( request.run(buf.str()) );
 
 
     std::vector<int> r;
@@ -82,9 +82,8 @@ std::vector<int> Finder::friends(int user_id) {
     return r;
 }
 
-Request Finder::req;
 
-const int MAX_THREAD_COUNT = 1;
+const int MAX_THREAD_COUNT = 1000;
 const int MAX_WAGON_PER_THREAD = 1000;
 int current_thread_count = 0;
 int root_id = 0;
@@ -157,8 +156,10 @@ public:
 	}
 
 	void hitch(Wagon* parent, std::vector<int> ids) {
+		//boost::mutex::scoped_lock lock(mutex);
 		int par_id = (parent)?parent->id:root_id;
-		std::cout << "hitch " << ids.size() << " elements from " << par_id << std::endl << "new content size: " << content.size() << std::endl;
+		std::cout << ids.size() << std::endl;
+		//std::cout << "hitch " << ids.size() << " elements from " << par_id << std::endl << "new content size: " << content.size() << std::endl;
 		// mtx_wagon.lock();
 		// mtx_content.lock();
 		for(int i = 0; i < ids.size(); i++) {
@@ -176,6 +177,8 @@ private:
 	std::map<int, Wagon*> wagons;
 	std::vector<int> content;
 	int iterator;
+
+	boost::mutex mutex;
 };
 
 
@@ -185,9 +188,9 @@ Train* train = new Train();
 void init() {
 	std::cout << "you can set 0 for root&target to get test-chain(from 659061 to 681449)" << std::endl;
 	std::cout << "root_id: ";
-	std::cin >> root_id;
+	//std::cin >> root_id;
 	std::cout << "target_id: ";
-	std::cin >> target_id;
+	//std::cin >> target_id;
 	if(root_id == 0 && target_id == 0) {
 		root_id = 659061;
 		target_id = /*1117;//*/681449;
@@ -218,13 +221,14 @@ int conductor(std::vector<int> ids) {
 	}
 	
 }
-boost::thread_group threads;
 
 void show_result(int finder);
 
 void threading() {
+	std::cout << "theads: " << current_thread_count << std::endl;
 	if(!target_founded) {
-		while((current_thread_count < MAX_THREAD_COUNT) & !train->is_finish()){ 
+		boost::thread_group threads;
+		while((current_thread_count < MAX_THREAD_COUNT) && !train->is_finish()){ 
 
 			threads.create_thread(boost::bind(conductor, train->get_next()));
 			current_thread_count++;
