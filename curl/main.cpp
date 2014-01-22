@@ -21,8 +21,6 @@ private:
 
 };
 
-boost::mutex mtx_wagon;
-boost::mutex mtx_content;
 
 
 size_t write_data(char *ptr, size_t size, size_t nmemb, void *userdata) {
@@ -83,8 +81,8 @@ std::vector<int> Finder::friends(int user_id) {
 }
 
 
-const int MAX_THREAD_COUNT = 1000;
-const int MAX_WAGON_PER_THREAD = 1000;
+const int MAX_THREAD_COUNT = 50;
+const int MAX_WAGON_PER_THREAD = 50;
 int current_thread_count = 0;
 int root_id = 0;
 int target_id = 0;
@@ -119,16 +117,21 @@ public:
 	}
 
 	bool is_finish() {
+		mutex.lock();
 		if(iterator < content.size()) {
+			mutex.unlock();
 			return false; 
 		} else {
+			mutex.unlock();
 			return true;
 		}
 	}
 
 	std::vector<int> get_next() {
+
 		std::vector<int> ids;
 		if (iterator < content.size()) {
+			mutex.lock();
 			if((content.size() - iterator)  < MAX_WAGON_PER_THREAD) {
 				for(int i = iterator; i < content.size(); i++) {
 					ids.push_back(content[i]);
@@ -141,36 +144,41 @@ public:
 				iterator += MAX_WAGON_PER_THREAD;
 				
 			}
+			mutex.unlock();
 			return ids;
 		}
 		return ids;
 	}
 
 	Wagon* get(int id) {
+		mutex.lock();
 		std::map<int, Wagon* >::iterator itr = wagons.find(id);
 		if(itr != wagons.end()) {
+			mutex.unlock();
 			return itr->second;
 		} else {
+			mutex.unlock();
 			return 0;
 		}
+		
 	}
 
 	void hitch(Wagon* parent, std::vector<int> ids) {
-		//boost::mutex::scoped_lock lock(mutex);
-		int par_id = (parent)?parent->id:root_id;
-		std::cout << ids.size() << std::endl;
-		//std::cout << "hitch " << ids.size() << " elements from " << par_id << std::endl << "new content size: " << content.size() << std::endl;
-		// mtx_wagon.lock();
-		// mtx_content.lock();
+		
+
 		for(int i = 0; i < ids.size(); i++) {
 			if(wagons.find(ids[i]) == wagons.end()) {
 				Wagon* wagon = new Wagon(ids[i], parent, (parent)?parent->deep + 1:0);
+				mutex.lock();
 				wagons[ids[i]] = wagon;
 				content.push_back(ids[i]);
+				mutex.unlock();
 			}
 		}
-		// mtx_wagon.unlock();
-		// mtx_content.unlock();
+		int par_id = (parent)?parent->id:root_id;
+		std::cout << "hitch " << ids.size() << " elements from " << par_id << std::endl << "new content size: " << content.size() << std::endl;
+		
+		
 	}
 
 private:
@@ -188,12 +196,12 @@ Train* train = new Train();
 void init() {
 	std::cout << "you can set 0 for root&target to get test-chain(from 659061 to 681449)" << std::endl;
 	std::cout << "root_id: ";
-	//std::cin >> root_id;
+	std::cin >> root_id;
 	std::cout << "target_id: ";
-	//std::cin >> target_id;
+	std::cin >> target_id;
 	if(root_id == 0 && target_id == 0) {
 		root_id = 659061;
-		target_id = /*1117;//*/681449;
+		target_id = 681449;
 	}
 	std::vector<int> ids;
 	ids.push_back(root_id);
@@ -201,6 +209,7 @@ void init() {
 }
 
 int conductor(std::vector<int> ids) {
+	std::vector<int> unionFr;
 	if(ids.size() > 0) {
 		for(int i = 0; i < ids.size(); i++) {
 			std::vector<int> fr = Finder::friends(ids[i]);
@@ -213,6 +222,7 @@ int conductor(std::vector<int> ids) {
 				train->hitch(train->get(ids[i]), fr);
 			}	
 		}
+		train->hitch(train->get(ids[i]), unionFr);
 		current_thread_count--;
 		return 0;
 	} else {
@@ -223,12 +233,12 @@ int conductor(std::vector<int> ids) {
 }
 
 void show_result(int finder);
-
+boost::thread_group threads;
 void threading() {
-	std::cout << "theads: " << current_thread_count << std::endl;
+	// std::cout << "theads: " << current_thread_count << std::endl;
 	if(!target_founded) {
-		boost::thread_group threads;
-		while((current_thread_count < MAX_THREAD_COUNT) && !train->is_finish()){ 
+
+		while((threads.size() < MAX_THREAD_COUNT) && !train->is_finish()){ 
 
 			threads.create_thread(boost::bind(conductor, train->get_next()));
 			current_thread_count++;
