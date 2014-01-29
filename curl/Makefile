@@ -3,11 +3,20 @@ all: main.o json.o
 
 
 main.o: main.cpp
-	clang++ -c main.cpp -o main.o -g -pg
+	clang++ -c main.cpp -o Obj/main.o -g -pg
 
 json.o: json.cpp
-	clang++ -c json.cpp -o json.o -g -pg
+	clang++ -c json.cpp -o Obj/json.o -g -pg
+
+train.o: Obj/config.o Obj/wagon.o
+	clang++ -c Src/train.cpp -o Obj/train.o
+
+config.o: Src/config.cpp
+	clang++ -c Src/config.cpp -o Obj/config.o
+
+wagon.o: Src/wagon.cpp
+	clang++ -c Src/wagon.cpp -o Obj/wagon.o
 
 clean:
-	rm -r *.o app
+	rm -r Obj/*.o app
 
