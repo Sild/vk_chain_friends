@@ -27,7 +27,7 @@ void *run_threads(void *a)
             if (threads[i].stop)
             {
                 threads[i].stop = false;
-                pthread_create(&threads[i].id, NULL, thread_func, (void *)i);
+                pthread_create(&threads[i].id, NULL, thread_func, (void *)new int(i));
                 pthread_detach(threads[i].id);
             }
         }
@@ -38,7 +38,8 @@ void *run_threads(void *a)
 
 void *thread_func(void *a)
 {
-    int num = (int)a;
+    int *num_p = (int *)a;
+    int num = *num_p;
     //std::cout << "Thread start" << std::endl;
     Range r = Container::getInstance().getRange();
     std::vector<User> cont;
@@ -49,6 +50,7 @@ void *thread_func(void *a)
         Container::getInstance().insert(cont);
     //std::cout << "Thread end" << std::endl;
     threads[num].stop = true;
+    delete num_p;
     pthread_t loop;
     pthread_create(&loop, NULL, run_threads, NULL);
     pthread_detach(loop);
@@ -64,7 +66,7 @@ void kill_threads()
             pthread_cancel(threads[i].id);
             ++killed;
         }
-    std::cout << "killed " << killed << " threads" << std::endl;
+//    std::cout << "killed " << killed << " threads" << std::endl;
 }
 
 
