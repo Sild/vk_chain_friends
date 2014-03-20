@@ -1,4 +1,5 @@
 #include "container.h"
+#include "requester.h"
 #include <unistd.h>
 #include <cstdlib>
 #include <cerrno>
@@ -59,4 +60,35 @@ void Container::insert(const std::vector<User> &range)
     }
 
     //std::cout << "insert new portion\n";
+}
+
+
+void Container::show()
+{
+    if (finded)
+    {
+        const User *first = cont + chain.first;
+        std::list<const User*> list;
+        while(first)
+        {
+            list.push_back(first);
+            first = first->parent;
+        }
+        const User *second = cont[chain.second].parent;
+        while(second)
+        {
+            list.push_front(second);
+            second = second->parent;
+        }
+        Requester req;
+        for(std::list<const User*>::iterator i = list.begin();
+                i != list.end(); ++i)
+        {
+            std::string name(req.name((*i)->id));
+            if (name.size() != 0)
+                std::cout << name << " ";
+            std::cout << "(id" << (*i)->id << ")" << std::endl;
+        }
+
+    }
 }

@@ -5,6 +5,7 @@
 #include "json.h"
 #include "container.h"
 #include <iostream>
+#include <string>
 
 class Requester
 {
@@ -14,6 +15,7 @@ private:
 public:
     Requester() : curl(curl_easy_init()) {}
     void operator()(const User* parent, DIRECTION dir, std::vector<User> &cont);
+    std::string name(size_t id);
 
 private:
     CURL* curl;

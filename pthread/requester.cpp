@@ -48,3 +48,40 @@ void Requester::operator()(const User* parent, DIRECTION dir, std::vector<User> 
     }
     //std::cout << "Return friends" << std::endl;
 }
+
+std::string Requester::name(size_t id)
+{
+    //std::cout << "Start friends get" << std::endl;
+    std::stringstream req;
+    req << "https://api.vk.com/method/users.get?user_id=" << id;
+    std::ostringstream buffer;
+    if(curl) {
+        curl_easy_setopt(curl, CURLOPT_URL, req.str().c_str() );;
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_data);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &buffer);
+
+        res = curl_easy_perform(curl);
+        if(res != CURLE_OK)
+          return "";
+    }
+    std::string result( buffer.str() );
+
+
+    if(result.length()) {
+        json::Object obj(json::Deserialize(result));
+        json::Value response(obj["response"]);
+        if (response.GetType() == json::ArrayVal)
+        {
+            json::Array res(response);
+            const json::Value hash(res[0]);
+            if (hash.GetType() == json::ObjectVal)
+            {
+                std::string first(hash.operator []("first_name"));
+                std::string last(hash.operator []("last_name"));
+                return first + " " + last;
+            }
+        }
+    }
+    return "";
+}

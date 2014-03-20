@@ -25,6 +25,7 @@ struct Range
     Range(User *start, size_t size) : begin(start), len(size) {}
 };
 
+
 class Container
 {
     static const size_t MAX_RANGE = 100;
@@ -79,31 +80,7 @@ public:
     }
 
     bool isFinded() { return finded; }
-    void show()
-    {
-        if (finded)
-        {
-            const User *first = cont + chain.first;
-            std::list<const User*> list;
-            while(first)
-            {
-                list.push_back(first);
-                first = first->parent;
-            }
-            const User *second = cont[chain.second].parent;
-            while(second)
-            {
-                list.push_front(second);
-                second = second->parent;
-            }
-            for(std::list<const User*>::iterator i = list.begin();
-                    i != list.end(); ++i)
-            {
-                std::cout << (*i)->id << std::endl;
-            }
-            
-        }
-    }
+    void show();
 
 
 private:
