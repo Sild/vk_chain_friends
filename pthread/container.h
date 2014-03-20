@@ -4,6 +4,7 @@
 #include <vector>
 #include <pthread.h>
 #include <iostream>
+#include <list>
 
 #define MAX_SIZE 999999
 enum DIRECTION { TO, FROM };
@@ -83,15 +84,24 @@ public:
         if (finded)
         {
             const User *first = cont + chain.first;
-            const User *second = cont + chain.second;
-            do {
-                std::cout << first->id << std::endl;
+            std::list<const User*> list;
+            while(first)
+            {
+                list.push_back(first);
                 first = first->parent;
-            } while(first);
-            do {
-                std::cout << second->id << std::endl;
+            }
+            const User *second = cont[chain.second].parent;
+            while(second)
+            {
+                list.push_front(second);
                 second = second->parent;
-            } while(second);
+            }
+            for(std::list<const User*>::iterator i = list.begin();
+                    i != list.end(); ++i)
+            {
+                std::cout << (*i)->id << std::endl;
+            }
+            
         }
     }
 

@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "pthread.h"
 #include <sstream>
+#include <cstdlib>
 
 struct thread_info
 {
@@ -67,9 +68,21 @@ void kill_threads()
 }
 
 
-int main()
+int main(int argc, char *argv[])
 {
-    Container::getInstance().setFinders(681449, 659061);
+    if (argc < 3)
+    {
+        std::cout << "usage: " << argv[0] << " <from> <to>" << std::endl;
+        return 0;
+    }
+    size_t from = atoi(argv[1]);
+    size_t to = atoi(argv[2]);
+    if (from == 0 || to == 0)
+    {
+        std::cout << "can't recognize id" << std::endl;
+        return 0;
+    }
+    Container::getInstance().setFinders(from, to);
 
     run_threads(NULL);
 
