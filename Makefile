@@ -1,6 +1,6 @@
 src=source/
 hdr=header/
-cmplr=clang++
+cmplr=g++
 
 all: obj main.o
 	${cmplr} -o find requester.o json.o container.o main.o -lpthread -lcurl

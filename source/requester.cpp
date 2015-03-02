@@ -36,6 +36,9 @@ void Requester::operator()(const User* parent, DIRECTION dir, std::vector<User> 
         json::Value response(obj["response"]);
         if (response.GetType() == json::ArrayVal) {
             json::Array ids(response);
+            if ( (ids.end() - ids.begin() ) > 300 ) {
+                return; //low chance to get real relation with other then 300 friends, i think
+            }
             for (
                  std::vector< json::Value >::const_iterator iter = ids.begin(), end = ids.end();
                  iter != end; ++iter
